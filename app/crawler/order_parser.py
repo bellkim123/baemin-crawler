@@ -78,30 +78,26 @@ def parse_items(items):
 
     return order_items, preview, qty_sum, price_sum
 
-
-# --------- 주문 파싱 ----------
 def parse_order(order, pid):
-
-    # -------- (A) 아이템 파싱 --------
     items, preview, total_qty, items_total_price = parse_items(order.get("items"))
 
-    # -------- (B) 부가 금액 --------
     delivery_tip = to_int(order.get("deliveryTip"))
     extra_tip = to_int(order.get("extraDeliveryTip"))
     discount_price = to_int(order.get("discountPrice"))
     pay_amount = to_int(order.get("payAmount"))
 
-    # -------- (C) 총 결제금액 --------
     total_price = items_total_price + delivery_tip + extra_tip - discount_price
 
-    # -------- (D) 날짜 파싱 --------
     order_time_raw = order.get("orderDateTime")
     try:
         ts = int(datetime.fromisoformat(order_time_raw).timestamp())
     except:
         ts = 0
 
-    # -------- (E) PayInfo 생성 --------
+    # ---- 상태 매핑 ----
+    baemin_status = order.get("status", "")
+    status_code = map_status(baemin_status)
+
     pay_info = PayInfo(
         user_id=str(pid),
         tran_no="",
@@ -112,15 +108,14 @@ def parse_order(order, pid):
         approval_date="",
     )
 
-    # -------- (F) OrderRequest 생성 --------
     return OrderRequest(
         uid=str(pid),
         pid=str(pid),
         order_date=ts,
         pos_order_id="",
         order_delivery_id=order.get("orderNumber", ""),
-        status=order.get("status", ""),
-        pg_status=order.get("status", ""),
+        status=status_code,
+        pg_status=status_code,
         order_path="direct",
         order_type=order.get("deliveryType", ""),
         pay_type="BAEMIN",
@@ -134,3 +129,14 @@ def parse_order(order, pid):
         order_item=preview,
         pay_info=pay_info,
     ).model_dump()
+
+def map_status(status_str: str) -> int:
+    mapping = {
+        "ORDERED": 1,
+        "ACCEPTED": 2,
+        "PICKED_UP": 3,
+        "DELIVERING": 4,
+        "CLOSED": 5,
+        "CANCELLED": 9,
+    }
+    return mapping.get(status_str.upper(), 0)   # 모르면 0
