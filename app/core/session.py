@@ -205,6 +205,7 @@ class AsyncCurlClient:
                 return parsed, r.status_code, r
             return parsed, r.status_code
 
+
         except Exception:
             baemin_logger.error("[HTTP POST ERROR]")
             baemin_logger.error(traceback.format_exc())
