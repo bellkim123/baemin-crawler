@@ -21,14 +21,22 @@ USER_AGENTS = [
 ]
 
 
+def is_block_html(text: str) -> bool:
+    """
+    배민 보안 차단 HTML 감지
+    """
+    if "<title>보안 위배" in text:
+        return True
+    if "올바르지 않은 요청으로" in text:
+        return True
+    if "보실 수 없습니다" in text and "<!DOCTYPE html>" in text:
+        return True
+    return False
+
+
 class AsyncCurlClient:
     """
     curl_cffi 기반 비동기 HTTP 클라이언트
-    - 랜덤 UA 지원
-    - 쿠키 지원
-    - 요청 레이트 제한
-    - 프록시 지원
-    - 요청/응답 상세 로깅
     """
 
     def __init__(
@@ -55,10 +63,7 @@ class AsyncCurlClient:
         if self._session is None:
             proxies = None
             if self.proxy:
-                proxies = {
-                    "http": self.proxy,
-                    "https": self.proxy,
-                }
+                proxies = {"http": self.proxy, "https": self.proxy}
 
             self._session = AsyncSession(
                 timeout=self.timeout,
@@ -89,7 +94,6 @@ class AsyncCurlClient:
         headers = headers or {}
         headers.setdefault("User-Agent", self.random_ua())
 
-        # 🔥 요청 로그
         baemin_logger.info(
             f"[HTTP GET REQUEST]\n"
             f"- URL: {url}\n"
@@ -110,12 +114,17 @@ class AsyncCurlClient:
 
             raw = r.content.decode("utf-8", errors="ignore")
 
-            # 🔥 응답 로그
+            # 🔥 보안위배 페이지 감지
+            if is_block_html(raw):
+                baemin_logger.error("[보안 위배] 배민 보안 차단 페이지 감지됨")
+                return raw, r.status_code  # 상위에서 처리
+
+            # 응답 로그 (길이 제한)
             baemin_logger.info(
                 f"[HTTP GET RESPONSE]\n"
                 f"- URL: {url}\n"
                 f"- Status: {r.status_code}\n"
-                f"- RawBody: {raw[:800]}\n"
+                f"- RawBody: {raw[:300]}\n"
             )
 
             if body_type.upper() == "JSON":
@@ -123,7 +132,7 @@ class AsyncCurlClient:
                     return r.json(), r.status_code
                 except Exception:
                     baemin_logger.error("[JSON PARSE ERROR - GET]")
-                    baemin_logger.error(raw)
+                    baemin_logger.error(raw[:300])
                     return {}, r.status_code
 
             return raw, r.status_code
@@ -151,7 +160,6 @@ class AsyncCurlClient:
         headers = headers or {}
         headers.setdefault("User-Agent", self.random_ua())
 
-        # 🔥 요청 로그
         baemin_logger.info(
             f"[HTTP POST REQUEST]\n"
             f"- URL: {url}\n"
@@ -172,12 +180,15 @@ class AsyncCurlClient:
 
             raw = r.content.decode("utf-8", errors="ignore")
 
-            # 🔥 응답 로그
+            if is_block_html(raw):
+                baemin_logger.error("[보안 위배] 배민 보안 차단 페이지 감지됨")
+                return (raw, r.status_code, r) if return_response else (raw, r.status_code)
+
             baemin_logger.info(
                 f"[HTTP POST RESPONSE]\n"
                 f"- URL: {url}\n"
                 f"- Status: {r.status_code}\n"
-                f"- RawBody: {raw[:800]}\n"
+                f"- RawBody: {raw[:300]}\n"
             )
 
             if body_type.upper() == "JSON":
@@ -185,9 +196,8 @@ class AsyncCurlClient:
                     parsed = r.json()
                 except Exception:
                     baemin_logger.error("[JSON PARSE ERROR - POST]")
-                    baemin_logger.error(raw)
+                    baemin_logger.error(raw[:300])
                     parsed = {}
-
             else:
                 parsed = raw
 
