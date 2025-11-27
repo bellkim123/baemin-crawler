@@ -6,7 +6,6 @@ from curl_cffi.requests import AsyncSession
 from aiolimiter import AsyncLimiter
 from app.core.logger import baemin_logger
 
-
 # -------------------------------
 # 랜덤 User-Agent 풀
 # -------------------------------
@@ -37,6 +36,7 @@ class AsyncCurlClient:
     - 랜덤 UA 지원
     - 쿠키 지원
     - 요청 레이트 제한 지원
+    - 프록시 지원
     """
 
     def __init__(
@@ -46,10 +46,12 @@ class AsyncCurlClient:
         http_version: str = "v1",
         max_concurrent: int = 5,
         duration: int = 1,
+        proxy: str | None = None,   # 🔥 프록시 문자열 추가
     ):
         self.timeout = timeout
         self.impersonate = impersonate
         self.http_version = http_version
+        self.proxy = proxy   # 🔥 저장
 
         # 요청 레이트 제한
         self.rate_limit = AsyncLimiter(max_concurrent, duration)
@@ -68,10 +70,20 @@ class AsyncCurlClient:
     # -------------------------------
     async def start(self):
         if self._session is None:
+
+            # 🔥 proxies 설정
+            proxies = None
+            if self.proxy:
+                proxies = {
+                    "http": self.proxy,
+                    "https": self.proxy,
+                }
+
             self._session = AsyncSession(
                 timeout=self.timeout,
                 impersonate=self.impersonate,
                 http_version=self.http_version,
+                proxies=proxies,   # 🔥 추가됨
             )
 
     # -------------------------------
@@ -96,7 +108,6 @@ class AsyncCurlClient:
         if self._session is None:
             await self.start()
 
-        # User-Agent 자동주입
         headers = headers or {}
         headers.setdefault("User-Agent", self.random_ua())
 
@@ -109,11 +120,10 @@ class AsyncCurlClient:
                     cookies=cookies,
                 )
 
-            return (
-                (r.json(), r.status_code)
-                if body_type.upper() == "JSON"
-                else (r.text, r.status_code)
-            )
+            if body_type.upper() == "JSON":
+                return r.json(), r.status_code
+            else:
+                return r.text, r.status_code
 
         except Exception:
             baemin_logger.error("[HTTP GET ERROR]")
@@ -124,13 +134,13 @@ class AsyncCurlClient:
     # POST
     # -------------------------------
     async def post(
-            self,
-            url: str,
-            json_data: Dict[str, Any] | None = None,
-            headers: Dict[str, Any] | None = None,
-            cookies: Dict[str, Any] | None = None,
-            body_type: str = "JSON",
-            return_response: bool = False,  # 🔥 추가됨
+        self,
+        url: str,
+        json_data: Dict[str, Any] | None = None,
+        headers: Dict[str, Any] | None = None,
+        cookies: Dict[str, Any] | None = None,
+        body_type: str = "JSON",
+        return_response: bool = False,  # 🔥 로그인 쿠키 추출 위해 추가됨
     ):
         if self._session is None:
             await self.start()
@@ -147,13 +157,12 @@ class AsyncCurlClient:
                     cookies=cookies,
                 )
 
-            # JSON / TEXT 처리
+            # JSON / TEXT 변환
             if body_type.upper() == "JSON":
                 parsed = r.json()
             else:
                 parsed = r.text
 
-            # 🔥 원본 response(r)도 함께 반환
             if return_response:
                 return parsed, r.status_code, r
 
@@ -165,4 +174,3 @@ class AsyncCurlClient:
             if return_response:
                 return {}, 500, None
             return {}, 500
-
