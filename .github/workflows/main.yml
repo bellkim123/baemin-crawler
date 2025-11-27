@@ -1,0 +1,39 @@
+name: Deploy to EC2
+
+on:
+  push:
+    branches: [ "main" ]
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v3
+
+      - name: Setup SSH key
+        run: |
+          echo "${{ secrets.EC2_KEY }}" > key.pem
+          chmod 600 key.pem
+
+      - name: Deploy to EC2 via SSH
+        run: |
+          ssh -o StrictHostKeyChecking=no -i key.pem ${{ secrets.EC2_USER }}@${{ secrets.EC2_HOST }} "
+            set -e
+
+            echo '--- Pulling latest code ---'
+            cd ${{ secrets.EC2_PROJECT_PATH }}
+
+            git fetch origin main
+            git reset --hard origin/main
+
+            echo '--- Installing dependencies ---'
+            source venv/bin/activate || python3 -m venv venv && source venv/bin/activate
+            pip install -r requirements.txt
+
+            echo '--- Restarting service ---'
+            sudo systemctl restart baemin
+
+            echo '--- Deployment complete ---'
+          "
