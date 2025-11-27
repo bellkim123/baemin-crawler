@@ -1,5 +1,3 @@
-# app/crawler/order_parser.py
-
 from datetime import datetime
 from app.models.order import (
     OrderRequest,

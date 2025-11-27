@@ -10,3 +10,13 @@ app.include_router(order_router, prefix="/baemin", tags=["Baemin Orders"])
 
 # 실행 명령:
 # uvicorn main:app --reload
+
+if __name__ == "__main__":
+    import uvicorn
+
+    uvicorn.run(
+        "main:app",      # ← uvicorn CLI에서 쓰던 것과 동일
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+    )

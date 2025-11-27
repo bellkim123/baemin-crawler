@@ -1,5 +1,3 @@
-# app/crawler/order_info.py
-
 import traceback
 from app.core.errors import BaeminError
 from app.core.logger import baemin_logger

@@ -1,5 +1,3 @@
-# app/core/logger.py
-
 import logging
 
 baemin_logger = logging.getLogger("baemin-crawler")

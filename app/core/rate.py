@@ -1,5 +1,3 @@
-# app/core/rate.py
-
 import asyncio
 import random
 from functools import wraps

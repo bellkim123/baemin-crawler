@@ -124,17 +124,17 @@ class AsyncCurlClient:
     # POST
     # -------------------------------
     async def post(
-        self,
-        url: str,
-        json_data: Dict[str, Any] | None = None,
-        headers: Dict[str, Any] | None = None,
-        cookies: Dict[str, Any] | None = None,
-        body_type: str = "JSON",
+            self,
+            url: str,
+            json_data: Dict[str, Any] | None = None,
+            headers: Dict[str, Any] | None = None,
+            cookies: Dict[str, Any] | None = None,
+            body_type: str = "JSON",
+            return_response: bool = False,  # 🔥 추가됨
     ):
         if self._session is None:
             await self.start()
 
-        # User-Agent 자동주입
         headers = headers or {}
         headers.setdefault("User-Agent", self.random_ua())
 
@@ -147,13 +147,22 @@ class AsyncCurlClient:
                     cookies=cookies,
                 )
 
-            return (
-                (r.json(), r.status_code)
-                if body_type.upper() == "JSON"
-                else (r.text, r.status_code)
-            )
+            # JSON / TEXT 처리
+            if body_type.upper() == "JSON":
+                parsed = r.json()
+            else:
+                parsed = r.text
+
+            # 🔥 원본 response(r)도 함께 반환
+            if return_response:
+                return parsed, r.status_code, r
+
+            return parsed, r.status_code
 
         except Exception:
             baemin_logger.error("[HTTP POST ERROR]")
             baemin_logger.error(traceback.format_exc())
+            if return_response:
+                return {}, 500, None
             return {}, 500
+

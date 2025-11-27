@@ -1,0 +1,69 @@
+# -------------------------
+# OS / 편집기 공통
+# -------------------------
+.DS_Store
+Thumbs.db
+
+# PyCharm / IntelliJ
+.idea/
+
+# VSCode (혹시 쓰실 경우)
+.vscode/
+
+# -------------------------
+# Python 기본
+# -------------------------
+__pycache__/
+*.py[cod]
+*$py.class
+
+# 가상환경
+.venv/
+venv/
+env/
+ENV/
+
+# 빌드 / 배포 산출물
+build/
+dist/
+*.egg-info/
+.eggs/
+
+# 테스트 / 커버리지
+.pytest_cache/
+.tox/
+.coverage
+.coverage.*
+htmlcov/
+nosetests.xml
+coverage.xml
+.cache/
+.mypy_cache/
+.pyre/
+.ruff_cache/
+
+# -------------------------
+# 환경 변수 / 설정
+# -------------------------
+*.env
+*.env.*
+.env
+.envrc
+
+# 파이참 관련 기타
+*.iml
+
+# -------------------------
+# 로그 / 임시 파일
+# -------------------------
+logs/
+*.log
+*.tmp
+*.swp
+*.swo
+
+# -------------------------
+# 기타 툴
+# -------------------------
+*.sqlite3
+*.db

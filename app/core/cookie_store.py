@@ -1,4 +1,3 @@
-# app/core/cookie_store.py
 import json
 import os
 import time
@@ -7,7 +6,7 @@ from typing import Optional
 BASE_PATH = "/tmp/baemin_cookies"
 os.makedirs(BASE_PATH, exist_ok=True)
 
-COOKIE_EXPIRE_SECONDS = 3600  # 1시간
+COOKIE_EXPIRE_SECONDS = 3600
 
 
 def get_cookie_path(account_id: str):
